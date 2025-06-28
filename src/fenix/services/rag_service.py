@@ -52,10 +52,10 @@ Instructions:
 
 Answer:
 """)
-            self.log.info("✅ RAG service initialized with Gemini LLM")
+            self.log.info("RAG service initialized with Gemini LLM")
         else:
             self.llm = None
-            self.log.info("✅ RAG service initialized without LLM (context-only mode)")
+            self.log.info("RAG service initialized without LLM (context-only mode)")
 
     async def query(
         self,

@@ -207,7 +207,7 @@ async def interactive_rag():
 
     while True:
         try:
-            question = console.input("\n❓ Your question: ").strip()
+            question = console.input("\nYour question: ").strip()
 
             if question.lower() in ["quit", "exit", "q"]:
                 break
