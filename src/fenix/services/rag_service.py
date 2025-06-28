@@ -21,7 +21,7 @@ class RAGService(LoggingMixin):
 
         Raises:
             ValueError: Except when the key is not valid.
-        """        
+        """
         self.document_service = DocumentService()
         self.use_llm = use_llm
 
@@ -74,7 +74,7 @@ Answer:
 
         Returns:
             dict[str, Any]: _description_
-        """        
+        """
         try:
             # Retrieve relevant documents
             self.log.debug(f"Searching for documents relevant to: {question}")
