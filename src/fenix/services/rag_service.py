@@ -14,7 +14,14 @@ class RAGService(LoggingMixin):
     """RAG (Retrieval-Augmented Generation) service using Gemini"""
 
     def __init__(self, use_llm: bool = True):
-        """Initialize RAG service"""
+        """Constructor.
+
+        Args:
+            use_llm (bool, optional): _description_. Defaults to True.
+
+        Raises:
+            ValueError: Except when the key is not valid.
+        """        
         self.document_service = DocumentService()
         self.use_llm = use_llm
 
@@ -57,10 +64,20 @@ Answer:
         similarity_threshold: float | None = None,
         filters: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """Query the RAG system"""
+        """QUery the RAG.
+
+        Args:
+            question (str): Question to ask.
+            max_docs (int, optional): Upper bound on retrieval. Defaults to 5.
+            similarity_threshold (float | None, optional): Cosine similarity threshold. Defaults to None.
+            filters (dict[str, Any] | None, optional): _description_. Defaults to None.
+
+        Returns:
+            dict[str, Any]: _description_
+        """        
         try:
             # Retrieve relevant documents
-            self.log.debug(f"🔍 Searching for documents relevant to: {question}")
+            self.log.debug(f"Searching for documents relevant to: {question}")
 
             docs_with_scores = await self.document_service.similarity_search(
                 query=question,
