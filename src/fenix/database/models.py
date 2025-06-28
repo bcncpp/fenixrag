@@ -2,14 +2,16 @@ from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, Foreign
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+from sqlalchemy.orm import declarative_base
 from pgvector.sqlalchemy import Vector
 import uuid
 from datetime import datetime
 from typing import Dict, Any, Optional
 
-from .connection import Base
-from ..config.settings import settings
+from ..config import settings
 
+# Create base class for models
+Base = declarative_base()
 
 class Document(Base):
     """Main document table"""
@@ -24,9 +26,7 @@ class Document(Base):
     content = Column(Text, nullable=False)
     source = Column(String(500))
     document_type = Column(String(100))
-    
-    # Metadata
-    metadata = Column(JSON, default=dict)
+    doc_metadata = Column(JSON, default=dict)
     
     # Vector embedding
     embedding = Column(Vector(settings.vector_dimension))

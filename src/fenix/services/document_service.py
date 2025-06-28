@@ -8,7 +8,7 @@ import logging
 from uuid import UUID, uuid4
 
 from ..database.models import Document, DocumentChunk, DocumentMetadata
-from ..database.connection import get_sync_session, get_async_session
+from ..database import get_sync_session, get_async_session
 from ..embeddings.gemini_embeddings import GeminiEmbeddings
 
 logger = logging.getLogger(__name__)

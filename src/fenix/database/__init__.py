@@ -1,8 +1,5 @@
 """Database package"""
 
-# =============================================================================
-# FILE: src/database/connection.py
-# =============================================================================
 from sqlalchemy import create_engine, text
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import sessionmaker, declarative_base
@@ -11,12 +8,10 @@ from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 import logging
 
-from ..config.settings import settings
+from ..config import settings
 
 logger = logging.getLogger(__name__)
 
-# Create base class for models
-Base = declarative_base()
 
 # Synchronous engine (for migrations and setup)
 sync_engine = create_engine(
@@ -60,17 +55,17 @@ class DatabaseManager:
                 # Enable pgvector extension
                 connection.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
                 connection.commit()
-                logger.info("✅ pgvector extension enabled")
+                logger.info("pgvector extension enabled")
                 
                 # Import models to ensure they're registered
                 from .models import Document, DocumentChunk, DocumentMetadata
                 
                 # Create all tables
                 Base.metadata.create_all(bind=sync_engine)
-                logger.info("✅ Database tables created")
+                logger.info("Database tables created")
                 
         except Exception as e:
-            logger.error(f"❌ Database initialization failed: {e}")
+            logger.error(f"Database initialization failed: {e}")
             raise
     
     @staticmethod
@@ -81,7 +76,7 @@ class DatabaseManager:
                 result = await conn.execute(text("SELECT 1"))
                 return result.scalar() == 1
         except Exception as e:
-            logger.error(f"❌ Database connection failed: {e}")
+            logger.error(f"Database connection failed: {e}")
             return False
     
     @staticmethod
@@ -107,4 +102,3 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
 def get_sync_session():
     """Get sync database session"""
     return SyncSessionLocal()
-

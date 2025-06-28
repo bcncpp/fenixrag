@@ -6,7 +6,7 @@ from typing import List, Dict, Any, Optional
 import logging
 
 from .document_service import DocumentService
-from ..config.settings import settings
+from ..config import settings
 
 logger = logging.getLogger(__name__)
 

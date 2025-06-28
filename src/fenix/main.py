@@ -8,11 +8,11 @@ import json
 from typing import Optional, List
 import logging
 
-from fenix.config.settings import settings
-from database.connection import DatabaseManager
-from services.document_service import DocumentService
-from services.rag_service import RAGService
-from data.sample_documents import SAMPLE_DOCUMENTS
+from fenix.config import settings
+from fenix.database import DatabaseManager
+from fenix.services.document_service import DocumentService
+from fenix.services.rag_service import RAGService
+from fenix.data.sample_documents import SAMPLE_DOCUMENTS
 
 # Setup logging
 logging.basicConfig(
@@ -22,7 +22,7 @@ logging.basicConfig(
 
 # Rich console for beautiful output
 console = Console()
-app = typer.Typer(help="🚀 LangChain Gemini PGVector Document Search System")
+app = typer.Typer(help="Fenix Document Search System")
 
 
 @app.command()
@@ -74,7 +74,7 @@ def search():
 def rag():
     """Interactive RAG Q&A"""
     
-    console.print("🤖 [bold blue]RAG Question & Answer Mode[/bold blue]")
+    console.print("[bold blue]RAG Question & Answer Mode[/bold blue]")
     console.print("Ask questions and get AI-powered answers based on your documents")
     
     asyncio.run(interactive_rag())
@@ -91,7 +91,7 @@ def add(content: str, title: Optional[str] = None, source: Optional[str] = None)
             title=title,
             source=source or "manual_input"
         )
-        console.print(f"✅ Added document: {doc_id}")
+        console.print(f"Added document: {doc_id}")
     
     asyncio.run(_add_doc())
 
@@ -251,7 +251,7 @@ async def interactive_rag():
         except Exception as e:
             console.print(f" Error: {e}")
     
-    console.print("👋 RAG session ended")
+    console.print("RAG session ended")
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 [project]
 name = "fenix"
 version = "0.1.0"
-description = ""
+description = "Simple RAG for applicaton"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -17,6 +17,10 @@ dependencies = [
     "langchain-google-genai>=2.0.10",
     "typer>=0.16.0",
 ]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
