@@ -10,11 +10,9 @@ from uuid import UUID, uuid4
 from ..database.models import Document, DocumentChunk, DocumentMetadata
 from ..database import get_sync_session, get_async_session
 from ..embeddings.gemini_embeddings import GeminiEmbeddings
+from ..common.logger import LoggingMixin
 
-logger = logging.getLogger(__name__)
-
-
-class DocumentService:
+class DocumentService(LoggingMixin):
     """Service for document operations with Gemini embeddings"""
     
     def __init__(self):
@@ -56,11 +54,11 @@ class DocumentService:
                     await self._add_metadata_entries(session, document.id, metadata)
                     await session.commit()
                 
-                logger.info(f"✅ Added document: {document.id}")
+                self.log.info(f"✅ Added document: {document.id}")
                 return document.id
                 
         except Exception as e:
-            logger.error(f"❌ Error adding document: {e}")
+            self.log.error(f"❌ Error adding document: {e}")
             raise
     
     async def add_documents_batch(
@@ -74,7 +72,7 @@ class DocumentService:
             contents = [doc.get('content', '') for doc in documents_data]
             
             # Generate embeddings in batch
-            logger.info(f"🔄 Generating embeddings for {len(contents)} documents...")
+            self.log.info(f"🔄 Generating embeddings for {len(contents)} documents...")
             embeddings = await self.embeddings.aembed_documents(contents)
             
             async with get_async_session() as session:
@@ -104,11 +102,11 @@ class DocumentService:
                 
                 await session.commit()
                 
-                logger.info(f"✅ Added {len(document_ids)} documents")
+                self.log.info(f"Added {len(document_ids)} documents")
                 return document_ids
                 
         except Exception as e:
-            logger.error(f"❌ Error adding documents batch: {e}")
+            self.log.error(f"Error adding documents batch: {e}")
             raise
     
     async def similarity_search(
@@ -168,11 +166,11 @@ class DocumentService:
                     for doc, distance in documents_with_distance
                 ]
                 
-                logger.debug(f"🔍 Found {len(documents_with_similarity)} similar documents")
+                self.log.debug(f"🔍 Found {len(documents_with_similarity)} similar documents")
                 return documents_with_similarity
                 
         except Exception as e:
-            logger.error(f"❌ Error in similarity search: {e}")
+            self.log.error(f"Error in similarity search: {e}")
             raise
     
     async def get_documents_by_metadata(
@@ -194,11 +192,11 @@ class DocumentService:
                 result = await session.execute(query_stmt)
                 documents = result.scalars().all()
                 
-                logger.debug(f"📂 Found {len(documents)} documents matching metadata filters")
+                self.log.debug(f"Found {len(documents)} documents matching metadata filters")
                 return documents
                 
         except Exception as e:
-            logger.error(f"❌ Error getting documents by metadata: {e}")
+            self.log.error(f"Error getting documents by metadata: {e}")
             raise
     
     async def delete_document(self, document_id: UUID) -> bool:
@@ -214,14 +212,14 @@ class DocumentService:
                 if document:
                     await session.delete(document)
                     await session.commit()
-                    logger.info(f"✅ Deleted document: {document_id}")
+                    self.log.info(f"✅ Deleted document: {document_id}")
                     return True
                 else:
-                    logger.warning(f"⚠️ Document not found: {document_id}")
+                    self.log.warning(f"⚠️ Document not found: {document_id}")
                     return False
                     
         except Exception as e:
-            logger.error(f"❌ Error deleting document: {e}")
+            self.log.error(f"Error deleting document: {e}")
             raise
     
     async def _add_metadata_entries(

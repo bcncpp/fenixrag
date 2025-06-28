@@ -1,3 +1,4 @@
+import asyncio
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_core.embeddings import Embeddings
 from typing import List
@@ -6,11 +7,10 @@ import asyncio
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from ..config import settings
+from ..common.logger import LoggingMixin
 
-logger = logging.getLogger(__name__)
 
-
-class GeminiEmbeddings(Embeddings):
+class GeminiEmbeddings(Embeddings, LoggingMixin):
     """Gemini embeddings with error handling and retries"""
     
     def __init__(self):
@@ -27,7 +27,7 @@ class GeminiEmbeddings(Embeddings):
             google_api_key=settings.google_api_key
         )
         
-        logger.info(f"✅ Initialized Gemini embeddings with model: {settings.gemini_model}")
+        self.logger.info(f"✅ Initialized Gemini embeddings with model: {settings.gemini_model}")
     
     @retry(
         stop=stop_after_attempt(3),
@@ -43,7 +43,7 @@ class GeminiEmbeddings(Embeddings):
             
             for i in range(0, len(texts), batch_size):
                 batch = texts[i:i + batch_size]
-                logger.debug(f"Processing batch {i//batch_size + 1}/{(len(texts) + batch_size - 1)//batch_size}")
+                self.logger.debug(f"Processing batch {i//batch_size + 1}/{(len(texts) + batch_size - 1)//batch_size}")
                 
                 batch_embeddings = self._embeddings.embed_documents(batch)
                 all_embeddings.extend(batch_embeddings)
@@ -52,11 +52,11 @@ class GeminiEmbeddings(Embeddings):
                 if i + batch_size < len(texts):
                     asyncio.sleep(0.1)
             
-            logger.info(f"✅ Generated embeddings for {len(texts)} documents")
+            self.logger.info(f"✅ Generated embeddings for {len(texts)} documents")
             return all_embeddings
             
         except Exception as e:
-            logger.error(f"❌ Error generating document embeddings: {e}")
+            self.logger.error(f"❌ Error generating document embeddings: {e}")
             raise
     
     @retry(
@@ -72,7 +72,7 @@ class GeminiEmbeddings(Embeddings):
             return embedding
             
         except Exception as e:
-            logger.error(f"❌ Error generating query embedding: {e}")
+            self.logger.error(f"❌ Error generating query embedding: {e}")
             raise
     
     async def aembed_documents(self, texts: List[str]) -> List[List[float]]:

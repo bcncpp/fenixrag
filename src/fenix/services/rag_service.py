@@ -7,11 +7,9 @@ import logging
 
 from .document_service import DocumentService
 from ..config import settings
+from ..common.logger import LoggingMixin
 
-logger = logging.getLogger(__name__)
-
-
-class RAGService:
+class RAGService(LoggingMixin):
     """RAG (Retrieval-Augmented Generation) service using Gemini"""
     
     def __init__(self, use_llm: bool = True):
@@ -47,10 +45,10 @@ Instructions:
 
 Answer:
 """)
-            logger.info("✅ RAG service initialized with Gemini LLM")
+            self.log.info("✅ RAG service initialized with Gemini LLM")
         else:
             self.llm = None
-            logger.info("✅ RAG service initialized without LLM (context-only mode)")
+            self.log.info("✅ RAG service initialized without LLM (context-only mode)")
     
     async def query(
         self,
@@ -63,7 +61,7 @@ Answer:
         
         try:
             # Retrieve relevant documents
-            logger.debug(f"🔍 Searching for documents relevant to: {question}")
+            self.log.debug(f"🔍 Searching for documents relevant to: {question}")
             
             docs_with_scores = await self.document_service.similarity_search(
                 query=question,
@@ -101,7 +99,7 @@ Answer:
             
             # Generate answer
             if self.use_llm and self.llm:
-                logger.debug("🤖 Generating answer with Gemini LLM")
+                self.log.debug("Generating answer with Gemini LLM")
                 
                 # Create the chain
                 chain = (
@@ -126,7 +124,7 @@ Answer:
             }
             
         except Exception as e:
-            logger.error(f"❌ Error in RAG query: {e}")
+            self.log.error(f"Error in RAG query: {e}")
             raise
     
     async def multi_query(
@@ -142,7 +140,7 @@ Answer:
                 result = await self.query(question, **kwargs)
                 results.append(result)
             except Exception as e:
-                logger.error(f"❌ Error processing question '{question}': {e}")
+                self.log.error(f"Error processing question '{question}': {e}")
                 results.append({
                     "answer": f"Error processing question: {str(e)}",
                     "sources": [],
