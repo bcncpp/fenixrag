@@ -117,4 +117,34 @@ coverage-clean: ## Clean coverage files
 	rm -rf $(REPORTS_DIR)/coverage.*
 	$(UV) run $(COVERAGE) erase
 	@echo "$(GREEN)Coverage files cleaned$(NC)"
-	
+quality: lint type-check security ## Run all quality checks
+
+lint: ## Run linting checks
+	@echo "$(BLUE)Running linting checks...$(NC)"
+	$(UV) run ruff check $(SRC_DIR) $(TEST_DIR)
+	@echo "$(GREEN)✓ Linting passed$(NC)"
+
+lint-fix: ## Fix linting issues automatically
+	@echo "$(BLUE)Fixing linting issues...$(NC)"
+	$(UV) run ruff check --fix $(SRC_DIR)
+	@echo "$(GREEN)✓ Linting issues fixed$(NC)"
+
+format: ## Format code
+	@echo "$(BLUE)Formatting code...$(NC)"
+	$(UV) run ruff format $(SRC_DIR) $(TEST_DIR)
+	@echo "$(GREEN)✓ Code formatted$(NC)"
+
+format-check: ## Check code formatting
+	@echo "$(BLUE)Checking code formatting...$(NC)"
+	$(UV) run ruff format --check $(SRC_DIR) $(TEST_DIR)
+	@echo "$(GREEN)✓ Code formatting is correct$(NC)"
+
+type-check: ## Run type checking
+	@echo "$(BLUE)Running type checks...$(NC)"
+	$(UV) run mypy $(SRC_DIR)
+	@echo "$(GREEN)✓ Type checking passed$(NC)"
+
+security: ## Run security checks
+	@echo "$(BLUE)Running security checks...$(NC)"
+	$(UV) run bandit -r $(SRC_DIR)
+	@echo "$(GREEN)✓ Security checks passed$(NC)"

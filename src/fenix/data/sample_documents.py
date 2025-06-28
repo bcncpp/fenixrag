@@ -10,8 +10,8 @@ SAMPLE_DOCUMENTS = [
             "category": "programming",
             "language": "python",
             "difficulty": "beginner",
-            "topics": ["syntax", "libraries", "applications"]
-        }
+            "topics": ["syntax", "libraries", "applications"],
+        },
     },
     {
         "title": "Java Enterprise Development",
@@ -22,8 +22,8 @@ SAMPLE_DOCUMENTS = [
             "category": "programming",
             "language": "java",
             "difficulty": "intermediate",
-            "topics": ["enterprise", "oop", "performance"]
-        }
+            "topics": ["enterprise", "oop", "performance"],
+        },
     },
     {
         "title": "JavaScript Web Development",
@@ -34,8 +34,8 @@ SAMPLE_DOCUMENTS = [
             "category": "programming",
             "language": "javascript",
             "difficulty": "beginner",
-            "topics": ["web", "frontend", "frameworks"]
-        }
+            "topics": ["web", "frontend", "frameworks"],
+        },
     },
     {
         "title": "Machine Learning Fundamentals",
@@ -46,8 +46,8 @@ SAMPLE_DOCUMENTS = [
             "category": "ai",
             "topic": "machine_learning",
             "difficulty": "intermediate",
-            "concepts": ["supervised", "unsupervised", "reinforcement"]
-        }
+            "concepts": ["supervised", "unsupervised", "reinforcement"],
+        },
     },
     {
         "title": "Deep Learning and Neural Networks",
@@ -58,8 +58,8 @@ SAMPLE_DOCUMENTS = [
             "category": "ai",
             "topic": "deep_learning",
             "difficulty": "advanced",
-            "applications": ["computer_vision", "nlp", "gaming"]
-        }
+            "applications": ["computer_vision", "nlp", "gaming"],
+        },
     },
     {
         "title": "The Eiffel Tower",
@@ -71,8 +71,8 @@ SAMPLE_DOCUMENTS = [
             "location": "paris",
             "type": "architecture",
             "built": 1889,
-            "height": "330m"
-        }
+            "height": "330m",
+        },
     },
     {
         "title": "The Louvre Museum",
@@ -84,8 +84,8 @@ SAMPLE_DOCUMENTS = [
             "location": "paris",
             "type": "museum",
             "famous_works": ["mona_lisa"],
-            "artist": "leonardo_da_vinci"
-        }
+            "artist": "leonardo_da_vinci",
+        },
     },
     {
         "title": "Artificial Intelligence Overview",
@@ -96,7 +96,7 @@ SAMPLE_DOCUMENTS = [
             "category": "ai",
             "topic": "artificial_intelligence",
             "difficulty": "intermediate",
-            "fields": ["robotics", "computer_vision", "nlp"]
-        }
-    }
+            "fields": ["robotics", "computer_vision", "nlp"],
+        },
+    },
 ]

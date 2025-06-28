@@ -1,12 +1,17 @@
 """Database package"""
 
-from sqlalchemy import create_engine, text
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy.orm import sessionmaker, declarative_base
-from sqlalchemy.pool import QueuePool
-from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 import logging
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
+
+from sqlalchemy import create_engine, text
+from sqlalchemy.ext.asyncio import (
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
+from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.pool import QueuePool
 
 from ..config import settings
 
@@ -21,7 +26,7 @@ sync_engine = create_engine(
     max_overflow=20,
     pool_timeout=30,
     pool_recycle=3600,
-    echo=(settings.log_level == "DEBUG")
+    echo=(settings.log_level == "DEBUG"),
 )
 
 # Asynchronous engine (for runtime operations)
@@ -32,21 +37,17 @@ async_engine = create_async_engine(
     max_overflow=20,
     pool_timeout=30,
     pool_recycle=3600,
-    echo=(settings.log_level == "DEBUG")
+    echo=(settings.log_level == "DEBUG"),
 )
 
 # Session factories
 SyncSessionLocal = sessionmaker(bind=sync_engine)
-AsyncSessionLocal = async_sessionmaker(
-    bind=async_engine,
-    class_=AsyncSession,
-    expire_on_commit=False
-)
+AsyncSessionLocal = async_sessionmaker(bind=async_engine, class_=AsyncSession, expire_on_commit=False)
 
 
 class DatabaseManager:
     """Database management utilities"""
-    
+
     @staticmethod
     def initialize_database():
         """Initialize database with pgvector extension and create tables"""
@@ -56,18 +57,18 @@ class DatabaseManager:
                 connection.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
                 connection.commit()
                 logger.info("pgvector extension enabled")
-                
+
                 # Import models to ensure they're registered
                 from .models import Document, DocumentChunk, DocumentMetadata
-                
+
                 # Create all tables
                 Base.metadata.create_all(bind=sync_engine)
                 logger.info("Database tables created")
-                
+
         except Exception as e:
             logger.error(f"Database initialization failed: {e}")
             raise
-    
+
     @staticmethod
     async def check_connection():
         """Check database connection"""
@@ -78,7 +79,7 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Database connection failed: {e}")
             return False
-    
+
     @staticmethod
     async def close_connections():
         """Close all database connections"""

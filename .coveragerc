@@ -1,0 +1,71 @@
+[run]
+# Source directory
+source = src
+
+# Omit these files/directories from coverage
+omit = 
+    */tests/*
+    */test_*
+    */__pycache__/*
+    */venv/*
+    */virtualenv/*
+    */.venv/*
+    */env/*
+    */migrations/*
+    */node_modules/*
+    setup.py
+    */conftest.py
+    */settings/*
+    */config/local_settings.py
+
+# Run coverage on these file patterns
+include = src/*
+
+# Enable branch coverage
+branch = True
+
+# Enable parallel processing (useful with test runners that fork)
+parallel = True
+
+[report]
+# Show missing lines
+show_missing = True
+
+# Skip files with 100% coverage
+skip_covered = False
+
+# Skip empty files
+skip_empty = True
+
+# Precision for percentage display
+precision = 2
+
+# Fail if coverage is below this threshold
+fail_under = 75
+
+# Exclude lines from coverage
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    def __str__
+    raise AssertionError
+    raise NotImplementedError
+    if __name__ == "__main__":
+    if TYPE_CHECKING:
+    class .*Protocol\):
+    @(abc\.)?abstractmethod
+
+[html]
+# Directory for HTML report
+directory = htmlcov
+
+# Title for HTML report
+title = Coverage Report
+
+[xml]
+# Output file for XML report
+output = reports/coverage.xml
+
+[json]
+# Output file for JSON report
+output = reports/coverage.json

@@ -34,327 +34,45 @@ dev = [
     "bandit>=1.8.5",
     "coverage-badge>=1.1.2",
 ]
+
 [project.scripts]
 fenix = "fenix.main:app"
+
 [tool.ruff]
-# Same as Google's style guide
-line-length = 80
-indent-width = 4
-
-# Python version compatibility
-target-version = "py39"
-
-# Include/exclude patterns
-include = ["*.py", "*.pyi", "**/pyproject.toml"]
-exclude = [
-    ".bzr",
-    ".direnv", 
-    ".eggs",
-    ".git",
-    ".git-rewrite",
-    ".hg",
-    ".mypy_cache",
-    ".nox",
-    ".pants.d",
-    ".pytype",
-    ".ruff_cache",
-    ".svn",
-    ".tox",
-    ".venv",
-    "__pypackages__",
-    "_build",
-    "buck-out",
-    "build",
-    "dist",
-    "node_modules",
-    "venv",
-    "migrations",  # Django migrations
-    "alembic",     # SQLAlchemy migrations
-]
-
-# Allow fix for all enabled rules (when `--fix`) is provided
-fix = true
-
-# Allow unused variables when underscore-prefixed
-dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
-
-# =============================================================================
-# LINTING RULES (Google Style Guide Compliance)
-# =============================================================================
+target-version = "py310" 
+line-length = 110
 
 [tool.ruff.lint]
-# Enable rule sets that align with Google Style Guide
 select = [
-    # === Core Python Rules ===
-    "E",      # pycodestyle errors
-    "W",      # pycodestyle warnings  
-    "F",      # Pyflakes
-    "UP",     # pyupgrade
-    "B",      # flake8-bugbear
-    "SIM",    # flake8-simplify
-    "I",      # isort
-    
-    # === Google Style Guide Specific ===
-    "C90",    # mccabe complexity
-    "N",      # pep8-naming (Google naming conventions)
-    "D",      # pydocstyle (Google docstring style)
-    "ANN",    # flake8-annotations (type hints)
-    "S",      # flake8-bandit (security)
-    "BLE",    # flake8-blind-except
-    "FBT",    # flake8-boolean-trap
-    "A",      # flake8-builtins
-    "COM",    # flake8-commas
-    "C4",     # flake8-comprehensions
-    "DTZ",    # flake8-datetimez
-    "T10",    # flake8-debugger
-    "EM",     # flake8-errmsg
-    "EXE",    # flake8-executable
-    "FA",     # flake8-future-annotations
-    "ISC",    # flake8-implicit-str-concat
-    "ICN",    # flake8-import-conventions
-    "G",      # flake8-logging-format
-    "INP",    # flake8-no-pep420
-    "PIE",    # flake8-pie
-    "T20",    # flake8-print
-    "PYI",    # flake8-pyi
-    "PT",     # flake8-pytest-style
-    "Q",      # flake8-quotes
-    "RSE",    # flake8-raise
-    "RET",    # flake8-return
-    "SLF",    # flake8-self
-    "SLOT",   # flake8-slots
-    "TID",    # flake8-tidy-imports
-    "TCH",    # flake8-type-checking
-    "INT",    # flake8-gettext
-    "ARG",    # flake8-unused-arguments
-    "PTH",    # flake8-use-pathlib
-    "TD",     # flake8-todos
-    "FIX",    # flake8-fixme
-    "ERA",    # eradicate
-    "PD",     # pandas-vet
-    "PGH",    # pygrep-hooks
-    "PL",     # Pylint
-    "TRY",    # tryceratops
-    "FLY",    # flynt
-    "NPY",    # NumPy-specific rules
-    "PERF",   # Perflint
-    "FURB",   # refurb
-    "LOG",    # flake8-logging
-    "RUF",    # Ruff-specific rules
+    "E",    # pycodestyle (PEP 8)
+    "F",    # pyflakes
+    "I",    # isort
+    "N",    # pep8-naming
+    "D",    # pydocstyle
+    "UP",   # pyupgrade
+    "C90",  # mccabe complexity
+    "PL",   # pylint (selective usage)
 ]
 
-# Disable rules that conflict with Google Style Guide or are too strict
+# Ignore rules that conflict with Google style or are overly strict
 ignore = [
-    # === Docstring Rules (customized for Google style) ===
-    "D100",   # Missing docstring in public module (too strict)
-    "D104",   # Missing docstring in public package (too strict)
-    "D105",   # Missing docstring in magic method (Google allows this)
-    "D107",   # Missing docstring in __init__ (Google style handles this differently)
-    "D203",   # 1 blank line required before class docstring (conflicts with D211)
-    "D212",   # Multi-line docstring summary should start at the first line (Google uses D213)
-    "D213",   # Multi-line docstring summary should start at the second line (conflicts with D212)
-    "D215",   # Section underline is over-indented
-    "D400",   # First line should end with a period (Google style is more flexible)
-    "D401",   # First line should be in imperative mood (Google style is more flexible)
-    "D404",   # First word of the docstring should not be "This" (Google allows this)
-    "D413",   # Missing blank line after last section (Google style variation)
-    "D415",   # First line should end with a period, question mark, or exclamation point
-    
-    # === Type Annotation Rules (balanced approach) ===
-    "ANN101", # Missing type annotation for self in method
-    "ANN102", # Missing type annotation for cls in classmethod
-    "ANN204", # Missing return type annotation for special method
-    "ANN401", # Dynamically typed expressions (Any) are disallowed (too strict)
-    
-    # === Import Rules ===
-    "TCH001", # Move application import into a type-checking block (can be overly strict)
-    "TCH002", # Move third-party import into a type-checking block (can be overly strict)
-    "TCH003", # Move standard library import into a type-checking block (can be overly strict)
-    
-    # === Boolean Trap Rules (context-dependent) ===
-    "FBT001", # Boolean positional arg in function definition (context-dependent)
-    "FBT002", # Boolean default value in function definition (context-dependent)
-    "FBT003", # Boolean positional value in function call (context-dependent)
-    
-    # === Exception Rules ===
-    "EM101",  # Exception must not use a string literal (Google allows simple strings)
-    "EM102",  # Exception must not use an f-string literal
-    "TRY003", # Avoid specifying long messages outside the exception class (Google is flexible)
-    
-    # === Complexity Rules (adjust based on project needs) ===
-    "C901",   # Complex function (McCabe complexity > 10) - will be configured separately
-    "PLR0911", # Too many return statements (Google is flexible)
-    "PLR0912", # Too many branches (Google is flexible)
-    "PLR0913", # Too many arguments (Google is flexible)
-    "PLR0915", # Too many statements (Google is flexible)
-    "PLR2004", # Magic value used in comparison (context-dependent)
-    
-    # === Print Statements (allow for debugging, scripts) ===
-    "T201",   # print found (allow in scripts and debugging)
-    
-    # === TODO Comments ===
-    "TD002",  # Missing author in TODO (not always required)
-    "TD003",  # Missing issue link on TODO (not always required)
-    "FIX002", # Line contains TODO (allow TODO comments)
-    
-    # === Pandas Rules (if not using pandas) ===
-    "PD",     # pandas-vet rules (disable if not using pandas)
-    
-    # === Logging Rules (customized) ===
-    "G004",   # Logging statement uses f-string (Google allows f-strings in logging)
-    
-    # === Security Rules (context-dependent) ===
-    "S101",   # Use of assert detected (allow assert in tests and debugging)
-    "S104",   # Possible binding to all interfaces (context-dependent)
-    "S324",   # Probable use of insecure hash functions (context-dependent)
-    
-    # === Performance Rules (balance readability vs performance) ===
-    "PERF203", # try-except within a loop incurs performance overhead (sometimes necessary)
-    
-    # === Return Rules ===
-    "RET504", # Unnecessary variable assignment before return statement (readability vs brevity)
+    "D100",  # Missing docstring in public module
+    "D104",  # Missing docstring in public package
+    "D107",  # Missing docstring in __init__
+    "E203",  # Whitespace before ':' (conflicts with black)
+    "PLR2004",  # Magic value used in comparison
+    "PLR0913",  # Too many arguments in function
 ]
 
-# =============================================================================
-# GOOGLE STYLE GUIDE SPECIFIC CONFIGURATIONS
-# =============================================================================
+# Isort options
+[tool.ruff.lint.isort]
+known-first-party = ["your_package_name"]
+combine-as-imports = true
 
-[tool.ruff.lint.mccabe]
-# Google Style Guide suggests keeping functions simple
-max-complexity = 10
-
+# Docstring style enforcement
 [tool.ruff.lint.pydocstyle]
-# Use Google docstring convention
 convention = "google"
 
-[tool.ruff.lint.pycodestyle]
-# Google Style Guide line length
-max-line-length = 80
-# Allow longer lines for specific cases
-ignore-overlong-line-length = true
-
-[tool.ruff.lint.pylint]
-# Configure Pylint rules for Google Style Guide
-max-args = 8          # Google allows reasonable number of arguments
-max-branches = 15     # Reasonable complexity
-max-returns = 8       # Allow multiple returns for clarity
-max-statements = 60   # Reasonable function length
-
-[tool.ruff.lint.flake8-quotes]
-# Google Style Guide prefers double quotes
-docstring-quotes = "double"
-inline-quotes = "double"
-multiline-quotes = "double"
-
-[tool.ruff.lint.flake8-builtins]
-# Disallow shadowing builtins (Google Style Guide principle)
-builtins-ignorelist = ["id", "input", "open", "type"]  # Common exceptions
-
-[tool.ruff.lint.flake8-annotations]
-# Type annotation requirements (Google Style Guide)
-mypy-init-return = true
-suppress-dummy-args = true
-suppress-none-returning = true
-
-[tool.ruff.lint.flake8-import-conventions]
-# Standard import conventions
-[tool.ruff.lint.flake8-import-conventions.aliases]
-"datetime" = "dt"
-"matplotlib.pyplot" = "plt"
-"numpy" = "np"
-"pandas" = "pd"
-"seaborn" = "sns"
-"tensorflow" = "tf"
-"torch" = "torch"
-"sqlalchemy" = "sa"
-
-[tool.ruff.lint.isort]
-# Google Style Guide import organization
-case-sensitive = true
-combine-as-imports = true
-force-grid-wrap = 0
-force-single-line = false
-include-trailing-comma = true
-known-first-party = ["src", "tests"]
-known-local-folder = ["src"]
-line-length = 130
-multi-line-output = 3
-order-by-type = true
-profile = "black"  # Compatible with black formatting
-split-on-trailing-comma = true
-
-# Import section order (Google Style Guide)
-section-order = [
-    "future",
-    "standard-library", 
-    "third-party",
-    "first-party",
-    "local-folder"
-]
-
-[tool.ruff.lint.flake8-pytest-style]
-# Pytest style preferences
-fixture-parentheses = false
-mark-parentheses = false
-parametrize-names-type = "tuple"
-parametrize-values-row-type = "tuple"
-parametrize-values-type = "tuple"
-
-[tool.ruff.lint.flake8-tidy-imports]
-# Prevent banned imports
-ban-relative-imports = "all"
-
-[tool.ruff.lint.per-file-ignores]
-# File-specific rule ignores
-
-# Test files
-"tests/**/*.py" = [
-    "D",       # Don't require docstrings in tests
-    "ANN",     # Don't require type annotations in tests
-    "S101",    # Allow assert in tests
-    "ARG001",  # Allow unused function arguments (fixtures)
-    "FBT",     # Allow boolean arguments in tests
-    "SLF001",  # Allow private member access in tests
-    "PLR2004", # Allow magic values in tests
-]
-
-# Configuration files
-"**/conftest.py" = [
-    "D",       # Don't require docstrings in conftest
-    "ANN",     # Don't require type annotations in conftest
-]
-
-# Scripts and utilities
-"scripts/**/*.py" = [
-    "T201",    # Allow print statements in scripts
-    "INP001",  # Allow scripts without __init__.py
-]
-
-# Migration files
-"**/migrations/**/*.py" = [
-    "D",       # Don't require docstrings in migrations
-    "ANN",     # Don't require type annotations in migrations
-    "E501",    # Allow long lines in migrations
-]
-
-# __init__.py files
-"**/__init__.py" = [
-    "D104",    # Don't require docstrings in __init__.py
-    "F401",    # Allow unused imports (re-exports)
-    "F403",    # Allow star imports in __init__.py
-]
-
-# =============================================================================
-# FORMATTING CONFIGURATION (Compatible with Google Style Guide)
-# =============================================================================
-
-[tool.ruff.format]
-# Google Style Guide formatting preferences
-quote-style = "double"           # Google prefers double quotes
-indent-style = "space"           # Use spaces for indentation
-skip-source-first-line = false   # Don't skip shebang
-line-ending = "auto"             # Respect existing line endings
-
-# Format strings
-docstring-code-format = true     # Format code blocks in docstrings
-docstring-code-line-length = 72  # Shorter lines in docstring code blocks
+# Complexity
+[tool.ruff.lint.mccabe]
+max-complexity = 10

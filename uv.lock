@@ -489,8 +489,6 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "asyncpg" },
-    { name = "bandit" },
-    { name = "coverage-badge" },
     { name = "google-generativeai" },
     { name = "langchain" },
     { name = "langchain-community" },
@@ -506,7 +504,9 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "bandit" },
     { name = "coverage" },
+    { name = "coverage-badge" },
     { name = "mypy" },
     { name = "pre-commit" },
     { name = "pytest" },
@@ -517,8 +517,6 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "asyncpg", specifier = "==0.29.0" },
-    { name = "bandit", specifier = ">=1.8.5" },
-    { name = "coverage-badge", specifier = ">=1.1.2" },
     { name = "google-generativeai", specifier = ">=0.7.0" },
     { name = "langchain", specifier = ">=0.0.27" },
     { name = "langchain-community", specifier = ">=0.2.5" },
@@ -534,7 +532,9 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "bandit", specifier = ">=1.8.5" },
     { name = "coverage", specifier = ">=7.9.1" },
+    { name = "coverage-badge", specifier = ">=1.1.2" },
     { name = "mypy", specifier = ">=1.16.1" },
     { name = "pre-commit", specifier = ">=4.2.0" },
     { name = "pytest", specifier = ">=8.4.1" },
