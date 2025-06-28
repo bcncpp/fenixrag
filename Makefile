@@ -1,0 +1,1 @@
+setup: uv run fenix --setup 
