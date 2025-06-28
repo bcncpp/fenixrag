@@ -1,0 +1,29 @@
+# =============================================================================
+# FILE: docker-compose.yml
+# =============================================================================
+version: '3.8'
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: gemini_docs_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    command: >
+      postgres
+      -c shared_preload_libraries=vector
+      -c max_connections=200
+      -c shared_buffers=512MB
+      -c effective_cache_size=2GB
+      -c work_mem=4MB
+      -c maintenance_work_mem=64MB
+
+volumes:
+  postgres_data:
+
