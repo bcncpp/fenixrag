@@ -1,4 +1,4 @@
-# LangChain Gemini PGVector Document Search
+# Fenix RAG - A simple rag as learning tool
 
 A modern document search and retrieval system using:
 - **Google Gemini** for embeddings
@@ -19,33 +19,33 @@ A modern document search and retrieval system using:
 
 3. **Run the demo:**
    ```bash
-   uv run python src/main.py --setup
+   uv run fenix --setup
    ```
 
-## 📋 Features
+##  Features
 
-- ✅ **Gemini Embeddings**: High-quality Google AI embeddings
-- ✅ **Vector Search**: Similarity, MMR, and threshold-based search
-- ✅ **RAG Pipeline**: Question-answering with context
-- ✅ **SQLAlchemy Models**: Proper database schema
-- ✅ **Async Support**: High-performance async operations
-- ✅ **Rich CLI**: Beautiful command-line interface
-- ✅ **Type Safety**: Full type hints and validation
+- **Gemini Embeddings**: High-quality Google AI embeddings
+- **Vector Search**: Similarity, MMR, and threshold-based search
+- **RAG Pipeline**: Question-answering with context
+- **SQLAlchemy Models**: Proper database schema
+- **Async Support**: High-performance async operations
+- **Rich CLI**: Beautiful command-line interface
+- **Type Safety**: Full type hints and validation
 
-## 🔧 Usage
+## Usage
 
 ```bash
 # Interactive search
-uv run python src/main.py --search
+uv run fenix  --search
 
 # RAG Q&A mode  
-uv run python src/main.py --rag
+uv run fenix --rag
 
 # Add custom documents
-uv run python src/main.py --add "Your document content here"
+uv run fenix --add "Your document content here"
 
 # Batch operations
-uv run python src/main.py --batch-add file.json
+uv run fenix --batch-add file.json
 ```
 
 ## 🏗️ Architecture
@@ -82,4 +82,3 @@ uv run python src/main.py --batch-add file.json
 - **Vector Search**: <10ms for similarity queries
 - **Batch Processing**: 1000+ documents/minute
 - **Memory Usage**: ~50MB base + vectors
-
