@@ -194,10 +194,10 @@ class DocumentService(LoggingMixin):
                 if document:
                     await session.delete(document)
                     await session.commit()
-                    self.log.info(f"✅ Deleted document: {document_id}")
+                    self.log.info(f"Deleted document: {document_id}")
                     return True
                 else:
-                    self.log.warning(f"⚠️ Document not found: {document_id}")
+                    self.log.warning(f" Document not found: {document_id}")
                     return False
 
         except Exception as e:
