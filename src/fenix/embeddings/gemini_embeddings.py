@@ -23,7 +23,7 @@ class GeminiEmbeddings(Embeddings, LoggingMixin):
             model=settings.gemini_model, google_api_key=settings.google_api_key
         )
 
-        self.logger.info(f"✅ Initialized Gemini embeddings with model: {settings.gemini_model}")
+        self.log.info(f"Initialized Gemini embeddings with model: {settings.gemini_model}")
 
     @retry(
         stop=stop_after_attempt(3),
@@ -38,7 +38,7 @@ class GeminiEmbeddings(Embeddings, LoggingMixin):
 
             for i in range(0, len(texts), batch_size):
                 batch = texts[i : i + batch_size]
-                self.logger.debug(
+                self.log.debug(
                     f"Processing batch {i // batch_size + 1}/{(len(texts) + batch_size - 1) // batch_size}"
                 )
 
@@ -49,11 +49,11 @@ class GeminiEmbeddings(Embeddings, LoggingMixin):
                 if i + batch_size < len(texts):
                     asyncio.sleep(0.1)
 
-            self.logger.info(f"✅ Generated embeddings for {len(texts)} documents")
+            self.log.info(f"✅ Generated embeddings for {len(texts)} documents")
             return all_embeddings
 
         except Exception as e:
-            self.logger.error(f"❌ Error generating document embeddings: {e}")
+            self.log.error(f"❌ Error generating document embeddings: {e}")
             raise
 
     @retry(
@@ -64,11 +64,11 @@ class GeminiEmbeddings(Embeddings, LoggingMixin):
         """Embed a single query with retry logic"""
         try:
             embedding = self._embeddings.embed_query(text)
-            logger.debug(f"✅ Generated query embedding for: {text[:50]}...")
+            self.log.debug(f"Generated query embedding for: {text[:50]}...")
             return embedding
 
         except Exception as e:
-            self.logger.error(f"❌ Error generating query embedding: {e}")
+            self.log.error(f"Error generating query embedding: {e}")
             raise
 
     async def aembed_documents(self, texts: list[str]) -> list[list[float]]:

@@ -69,12 +69,14 @@ class DocumentService(LoggingMixin):
             # Generate embeddings in batch
             self.log.info(f"🔄 Generating embeddings for {len(contents)} documents...")
             embeddings = await self.embeddings.aembed_documents(contents)
+            print(len(embeddings))  # Should match DB expectation (e.g., 1536)
 
             async with get_async_session() as session:
                 document_ids = []
 
                 for doc_data, embedding in zip(documents_data, embeddings):
                     # Create document
+                    print(len(embedding))
                     document = Document(
                         title=doc_data.get("title"),
                         content=doc_data.get("content", ""),

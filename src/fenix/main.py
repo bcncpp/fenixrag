@@ -45,12 +45,12 @@ def setup():
         # Initialize database
         task1 = progress.add_task("Initializing database...", total=None)
         DatabaseManager.initialize_database()
-        progress.update(task1, description="✅ Database initialized")
+        progress.update(task1, description="Database initialized")
 
         # Load sample documents
         task2 = progress.add_task("Loading sample documents...", total=None)
         asyncio.run(load_sample_documents())
-        progress.update(task2, description="✅ Sample documents loaded")
+        progress.update(task2, description="Sample documents loaded")
 
     console.print("\n[bold green]Setup completed successfully![/bold green]")
     console.print("\nNext steps:")
@@ -61,7 +61,7 @@ def setup():
 @app.command()
 def search():
     """Interactive document search"""
-    console.print("🔍 [bold blue]Interactive Document Search[/bold blue]")
+    console.print("[bold blue]Interactive Document Search[/bold blue]")
     console.print("Commands: search <query> | filter <category> <query> | quit")
 
     asyncio.run(interactive_search())
@@ -153,7 +153,8 @@ async def interactive_search():
                     table.add_column("Category", justify="center")
 
                     for doc, score in docs_with_scores:
-                        category = doc.metadata.get("category", "unknown") if doc.metadata else "unknown"
+                        category = "unknown" 
+                        # doc.metadata.get("category", "unknown") if doc.metadata else "unknown"
                         content_preview = doc.content[:100] + "..." if len(doc.content) > 100 else doc.content
 
                         table.add_row(
@@ -177,7 +178,7 @@ async def interactive_search():
                     )
 
                 if docs_with_scores:
-                    console.print(f"📂 Results in '{category}' category:")
+                    console.print(f"Results in '{category}' category:")
                     for i, (doc, score) in enumerate(docs_with_scores, 1):
                         console.print(f"  {i}. [Score: {score:.3f}] {doc.content}")
                 else:

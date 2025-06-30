@@ -3,7 +3,6 @@
 import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-
 from sqlalchemy import create_engine, text
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
@@ -16,6 +15,8 @@ from sqlalchemy.pool import QueuePool
 from ..config import settings
 
 logger = logging.getLogger(__name__)
+
+Base = declarative_base()
 
 
 # Synchronous engine (for migrations and setup)
