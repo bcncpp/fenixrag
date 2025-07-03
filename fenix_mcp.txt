@@ -1,0 +1,313 @@
+import asyncio
+import json
+import logging
+from typing import Any, Dict, List, Optional, Union
+from urllib.parse import urljoin, urlparse
+import httpx
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
+from mcp.server.fastmcp import FastMCP
+from mcp.types import Tool, TextContent
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+class OpenAPIToolGenerator:
+    """Generates MCP tools from OpenAPI specifications"""
+    
+    def __init__(self, openapi_spec: Dict[str, Any], base_url: str = ""):
+        self.openapi_spec = openapi_spec
+        self.base_url = base_url or ""
+        self.tools = []
+        self.client = httpx.AsyncClient(timeout=30.0)
+        
+    def _get_operation_id(self, path: str, method: str, operation: Dict[str, Any]) -> str:
+        """Generate a unique operation ID for the tool"""
+        if "operationId" in operation:
+            return operation["operationId"]
+        # Generate from path and method
+        clean_path = path.replace("/", "_").replace("{", "").replace("}", "").strip("_")
+        return f"{method.lower()}_{clean_path}"
+    
+    def _parse_parameters(self, operation: Dict[str, Any]) -> Dict[str, Any]:
+        """Parse OpenAPI parameters into MCP tool schema"""
+        properties = {}
+        required = []
+        
+        parameters = operation.get("parameters", [])
+        
+        for param in parameters:
+            param_name = param["name"]
+            param_schema = param.get("schema", {})
+            
+            # Handle different parameter types
+            properties[param_name] = {
+                "type": param_schema.get("type", "string"),
+                "description": param.get("description", "")
+            }
+            
+            if param_schema.get("enum"):
+                properties[param_name]["enum"] = param_schema["enum"]
+            
+            if param.get("required", False):
+                required.append(param_name)
+        
+        # Handle request body
+        request_body = operation.get("requestBody", {})
+        if request_body:
+            content = request_body.get("content", {})
+            if "application/json" in content:
+                schema = content["application/json"].get("schema", {})
+                if schema.get("type") == "object":
+                    body_properties = schema.get("properties", {})
+                    for prop_name, prop_schema in body_properties.items():
+                        properties[f"body_{prop_name}"] = {
+                            "type": prop_schema.get("type", "string"),
+                            "description": prop_schema.get("description", f"Request body field: {prop_name}")
+                        }
+                        if prop_name in schema.get("required", []):
+                            required.append(f"body_{prop_name}")
+        
+        return {
+            "type": "object",
+            "properties": properties,
+            "required": required
+        }
+    
+    def _build_request_url(self, path: str, parameters: Dict[str, Any]) -> str:
+        """Build the full request URL with path parameters"""
+        url = urljoin(self.base_url, path)
+        
+        # Replace path parameters
+        for key, value in parameters.items():
+            if "{" + key + "}" in url:
+                url = url.replace("{" + key + "}", str(value))
+        
+        return url
+    
+    def _build_query_params(self, operation: Dict[str, Any], parameters: Dict[str, Any]) -> Dict[str, Any]:
+        """Build query parameters from operation parameters"""
+        query_params = {}
+        
+        for param in operation.get("parameters", []):
+            if param.get("in") == "query" and param["name"] in parameters:
+                query_params[param["name"]] = parameters[param["name"]]
+        
+        return query_params
+    
+    def _build_headers(self, operation: Dict[str, Any], parameters: Dict[str, Any]) -> Dict[str, str]:
+        """Build headers from operation parameters"""
+        headers = {"Content-Type": "application/json"}
+        
+        for param in operation.get("parameters", []):
+            if param.get("in") == "header" and param["name"] in parameters:
+                headers[param["name"]] = str(parameters[param["name"]])
+        
+        return headers
+    
+    def _build_request_body(self, operation: Dict[str, Any], parameters: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Build request body from body parameters"""
+        request_body = operation.get("requestBody", {})
+        if not request_body:
+            return None
+        
+        body = {}
+        for key, value in parameters.items():
+            if key.startswith("body_"):
+                body_key = key[5:]  # Remove "body_" prefix
+                body[body_key] = value
+        
+        return body if body else None
+    
+    async def _execute_operation(self, method: str, operation: Dict[str, Any], parameters: Dict[str, Any], path: str) -> Dict[str, Any]:
+        """Execute an HTTP operation"""
+        try:
+            url = self._build_request_url(path, parameters)
+            query_params = self._build_query_params(operation, parameters)
+            headers = self._build_headers(operation, parameters)
+            request_body = self._build_request_body(operation, parameters)
+            
+            logger.info(f"Executing {method.upper()} {url}")
+            
+            response = await self.client.request(
+                method=method.upper(),
+                url=url,
+                params=query_params,
+                headers=headers,
+                json=request_body
+            )
+            
+            response.raise_for_status()
+            
+            # Try to parse JSON response
+            try:
+                return {
+                    "status_code": response.status_code,
+                    "data": response.json()
+                }
+            except json.JSONDecodeError:
+                return {
+                    "status_code": response.status_code,
+                    "data": response.text
+                }
+                
+        except httpx.HTTPStatusError as e:
+            return {
+                "error": f"HTTP {e.response.status_code}: {e.response.text}",
+                "status_code": e.response.status_code
+            }
+        except Exception as e:
+            return {
+                "error": str(e),
+                "status_code": 500
+            }
+    
+    def generate_tools(self) -> List[Tool]:
+        """Generate MCP tools from OpenAPI specification"""
+        tools = []
+        
+        paths = self.openapi_spec.get("paths", {})
+        
+        for path, path_item in paths.items():
+            for method, operation in path_item.items():
+                if method.lower() not in ["get", "post", "put", "patch", "delete", "head", "options"]:
+                    continue
+                
+                operation_id = self._get_operation_id(path, method, operation)
+                summary = operation.get("summary", f"{method.upper()} {path}")
+                description = operation.get("description", summary)
+                
+                # Parse parameters
+                input_schema = self._parse_parameters(operation)
+                
+                # Create tool
+                tool = Tool(
+                    name=operation_id,
+                    description=f"{description}\n\nPath: {method.upper()} {path}",
+                    inputSchema=input_schema
+                )
+                
+                tools.append(tool)
+        
+        return tools
+    
+    async def execute_tool(self, tool_name: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute a tool by name"""
+        paths = self.openapi_spec.get("paths", {})
+        
+        for path, path_item in paths.items():
+            for method, operation in path_item.items():
+                if method.lower() not in ["get", "post", "put", "patch", "delete", "head", "options"]:
+                    continue
+                
+                operation_id = self._get_operation_id(path, method, operation)
+                
+                if operation_id == tool_name:
+                    return await self._execute_operation(method, operation, parameters, path)
+        
+        raise ValueError(f"Tool '{tool_name}' not found")
+
+class OpenAPIConfig(BaseModel):
+    """Configuration for OpenAPI specification"""
+    openapi_url: str = Field(..., description="URL to fetch OpenAPI specification")
+    base_url: str = Field("", description="Base URL for API requests")
+
+# Create FastAPI app
+app = FastAPI(title="FastMCP OpenAPI Server")
+
+# Global variables
+tool_generator: Optional[OpenAPIToolGenerator] = None
+mcp_server: Optional[FastMCP] = None
+
+@app.post("/configure")
+async def configure_openapi(config: OpenAPIConfig):
+    """Configure the server with OpenAPI specification"""
+    global tool_generator, mcp_server
+    
+    try:
+        # Fetch OpenAPI specification
+        async with httpx.AsyncClient() as client:
+            response = await client.get(config.openapi_url)
+            response.raise_for_status()
+            openapi_spec = response.json()
+        
+        # Create tool generator
+        tool_generator = OpenAPIToolGenerator(openapi_spec, config.base_url)
+        
+        # Generate tools
+        tools = tool_generator.generate_tools()
+        
+        # Create MCP server
+        mcp_server = FastMCP("OpenAPI Tools")
+        
+        # Register tools
+        for tool in tools:
+            async def create_tool_handler(tool_name: str):
+                async def tool_handler(**kwargs):
+                    result = await tool_generator.execute_tool(tool_name, kwargs)
+                    return [TextContent(type="text", text=json.dumps(result, indent=2))]
+                return tool_handler
+            
+            mcp_server.add_tool(
+                tool,
+                create_tool_handler(tool.name)
+            )
+        
+        return {
+            "message": "OpenAPI configuration successful",
+            "tools_count": len(tools),
+            "tools": [tool.name for tool in tools]
+        }
+        
+    except Exception as e:
+        logger.error(f"Configuration error: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/tools")
+async def list_tools():
+    """List available tools"""
+    if not tool_generator:
+        raise HTTPException(status_code=400, detail="Server not configured. Call /configure first.")
+    
+    tools = tool_generator.generate_tools()
+    return {
+        "tools": [
+            {
+                "name": tool.name,
+                "description": tool.description,
+                "input_schema": tool.inputSchema
+            }
+            for tool in tools
+        ]
+    }
+
+@app.post("/execute/{tool_name}")
+async def execute_tool(tool_name: str, parameters: Dict[str, Any]):
+    """Execute a specific tool"""
+    if not tool_generator:
+        raise HTTPException(status_code=400, detail="Server not configured. Call /configure first.")
+    
+    try:
+        result = await tool_generator.execute_tool(tool_name, parameters)
+        return result
+    except Exception as e:
+        logger.error(f"Tool execution error: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/")
+async def root():
+    """Root endpoint"""
+    return {
+        "message": "FastMCP OpenAPI Server",
+        "configured": tool_generator is not None,
+        "endpoints": {
+            "configure": "POST /configure - Configure with OpenAPI spec",
+            "tools": "GET /tools - List available tools",
+            "execute": "POST /execute/{tool_name} - Execute a tool"
+        }
+    }
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
