@@ -1,0 +1,359 @@
+from openapi_parser import parse
+from typing import Dict, List, Any, Optional, Callable
+import json
+import asyncio
+import httpx
+from urllib.parse import urljoin
+
+class OpenAPIMCPServer:
+    """MCP Server that generates and executes tools from OpenAPI specifications."""
+    
+    def __init__(self, openapi_spec_path: str, base_url: str = None, headers: Dict[str, str] = None):
+        """
+        Initialize the MCP server with OpenAPI specification.
+        
+        Args:
+            openapi_spec_path: Path to OpenAPI specification file
+            base_url: Base URL for API calls (overrides spec servers)
+            headers: Default headers for all requests
+        """
+        self.spec = parse(openapi_spec_path)
+        self.base_url = base_url or self._get_base_url()
+        self.default_headers = headers or {}
+        self.tools = self._generate_tools()
+        self.tool_handlers = self._create_tool_handlers()
+    
+    def _get_base_url(self) -> str:
+        """Get base URL from OpenAPI spec."""
+        if hasattr(self.spec, 'servers') and self.spec.servers:
+            return self.spec.servers[0].url
+        return "http://localhost"
+    
+    def _generate_tools(self) -> List[Dict[str, Any]]:
+        """Generate MCP tools from OpenAPI specification."""
+        tools = []
+        
+        for path, path_item in self.spec.paths.items():
+            for method, operation in path_item.operations.items():
+                if operation is None:
+                    continue
+                
+                tool = {
+                    "name": self._generate_tool_name(path, method, operation),
+                    "description": operation.summary or operation.description or f"{method.upper()} {path}",
+                    "inputSchema": self._generate_input_schema(operation, path, method),
+                    "_meta": {
+                        "path": path,
+                        "method": method.upper(),
+                        "operation": operation
+                    }
+                }
+                
+                tools.append(tool)
+        
+        return tools
+    
+    def _create_tool_handlers(self) -> Dict[str, Callable]:
+        """Create handler functions for each tool."""
+        handlers = {}
+        
+        for tool in self.tools:
+            tool_name = tool["name"]
+            handlers[tool_name] = self._create_handler(tool)
+        
+        return handlers
+    
+    def _create_handler(self, tool: Dict[str, Any]) -> Callable:
+        """Create a handler function for a specific tool."""
+        async def handler(arguments: Dict[str, Any]) -> Dict[str, Any]:
+            return await self._execute_api_call(tool, arguments)
+        
+        return handler
+    
+    async def _execute_api_call(self, tool: Dict[str, Any], arguments: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute the actual API call for a tool."""
+        meta = tool["_meta"]
+        path = meta["path"]
+        method = meta["method"]
+        
+        # Build URL with path parameters
+        url = self._build_url(path, arguments)
+        
+        # Prepare request components
+        params = self._extract_query_params(arguments)
+        headers = self._extract_headers(arguments)
+        data = arguments.get("body")
+        
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.request(
+                    method=method,
+                    url=url,
+                    params=params,
+                    headers=headers,
+                    json=data if data else None
+                )
+                
+                # Try to parse JSON response
+                try:
+                    response_data = response.json()
+                except:
+                    response_data = response.text
+                
+                return {
+                    "status_code": response.status_code,
+                    "headers": dict(response.headers),
+                    "data": response_data
+                }
+                
+        except Exception as e:
+            return {
+                "error": str(e),
+                "status_code": None
+            }
+    
+    def _build_url(self, path: str, arguments: Dict[str, Any]) -> str:
+        """Build URL with path parameters."""
+        url_path = path
+        
+        # Replace path parameters
+        for key, value in arguments.items():
+            if f"{{{key}}}" in url_path:
+                url_path = url_path.replace(f"{{{key}}}", str(value))
+        
+        return urljoin(self.base_url, url_path)
+    
+    def _extract_query_params(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
+        """Extract query parameters from arguments."""
+        # Remove path parameters, body, and headers
+        query_params = {}
+        for key, value in arguments.items():
+            if key not in ["body", "headers"] and not self._is_path_param(key):
+                query_params[key] = value
+        
+        return query_params
+    
+    def _extract_headers(self, arguments: Dict[str, Any]) -> Dict[str, str]:
+        """Extract headers from arguments."""
+        headers = self.default_headers.copy()
+        
+        if "headers" in arguments:
+            headers.update(arguments["headers"])
+        
+        return headers
+    
+    def _is_path_param(self, param_name: str) -> bool:
+        """Check if parameter is a path parameter."""
+        # This is a simplified check - in practice, you'd want to track this more precisely
+        return any(f"{{{param_name}}}" in path for path, _ in self.spec.paths.items())
+    
+    # Tool generation methods (same as before but with _meta data)
+    def _generate_tool_name(self, path: str, method: str, operation) -> str:
+        """Generate a unique tool name from path, method, and operation."""
+        if hasattr(operation, 'operation_id') and operation.operation_id:
+            return operation.operation_id
+        
+        clean_path = path.replace('/', '_').replace('{', '').replace('}', '')
+        if clean_path.startswith('_'):
+            clean_path = clean_path[1:]
+        if clean_path.endswith('_'):
+            clean_path = clean_path[:-1]
+        
+        if not clean_path:
+            clean_path = "root"
+        
+        return f"{method.lower()}_{clean_path}"
+    
+    def _generate_input_schema(self, operation, path: str, method: str) -> Dict[str, Any]:
+        """Generate JSON schema for MCP tool input parameters."""
+        schema = {
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
+        
+        # Add path parameters
+        path_params = self._extract_path_parameters(path, operation)
+        for param_name, param_schema in path_params.items():
+            schema["properties"][param_name] = param_schema
+            schema["required"].append(param_name)
+        
+        # Add query parameters
+        query_params = self._extract_query_parameters(operation)
+        for param_name, param_schema in query_params.items():
+            schema["properties"][param_name] = param_schema
+            if param_schema.get("required", False):
+                schema["required"].append(param_name)
+        
+        # Add request body for POST/PUT/PATCH
+        if method.upper() in ["POST", "PUT", "PATCH"]:
+            body_schema = self._extract_request_body_schema(operation)
+            if body_schema:
+                schema["properties"]["body"] = body_schema
+                schema["required"].append("body")
+        
+        # Add headers if any are defined
+        header_params = self._extract_header_parameters(operation)
+        if header_params:
+            schema["properties"]["headers"] = {
+                "type": "object",
+                "properties": header_params
+            }
+        
+        return schema
+    
+    def _extract_path_parameters(self, path: str, operation) -> Dict[str, Dict[str, Any]]:
+        """Extract path parameters from operation."""
+        params = {}
+        
+        if hasattr(operation, 'parameters') and operation.parameters:
+            for param in operation.parameters:
+                if param.location == 'path':
+                    param_schema = {
+                        "type": self._get_param_type(param),
+                        "description": param.description or f"Path parameter: {param.name}"
+                    }
+                    params[param.name] = param_schema
+        
+        return params
+    
+    def _extract_query_parameters(self, operation) -> Dict[str, Dict[str, Any]]:
+        """Extract query parameters from operation."""
+        params = {}
+        
+        if hasattr(operation, 'parameters') and operation.parameters:
+            for param in operation.parameters:
+                if param.location == 'query':
+                    param_schema = {
+                        "type": self._get_param_type(param),
+                        "description": param.description or f"Query parameter: {param.name}",
+                        "required": param.required if hasattr(param, 'required') else False
+                    }
+                    
+                    if hasattr(param, 'schema') and hasattr(param.schema, 'enum'):
+                        param_schema["enum"] = param.schema.enum
+                    
+                    params[param.name] = param_schema
+        
+        return params
+    
+    def _extract_header_parameters(self, operation) -> Dict[str, Dict[str, Any]]:
+        """Extract header parameters from operation."""
+        params = {}
+        
+        if hasattr(operation, 'parameters') and operation.parameters:
+            for param in operation.parameters:
+                if param.location == 'header':
+                    param_schema = {
+                        "type": self._get_param_type(param),
+                        "description": param.description or f"Header parameter: {param.name}"
+                    }
+                    params[param.name] = param_schema
+        
+        return params
+    
+    def _extract_request_body_schema(self, operation) -> Optional[Dict[str, Any]]:
+        """Extract request body schema from operation."""
+        if not hasattr(operation, 'request_body') or not operation.request_body:
+            return None
+        
+        request_body = operation.request_body
+        
+        if hasattr(request_body, 'content'):
+            for content_type, media_type in request_body.content.items():
+                if 'json' in content_type.lower():
+                    if hasattr(media_type, 'schema'):
+                        return self._convert_openapi_schema_to_json_schema(media_type.schema)
+        
+        return {
+            "type": "object",
+            "description": request_body.description if hasattr(request_body, 'description') else "Request body"
+        }
+    
+    def _get_param_type(self, param) -> str:
+        """Get parameter type from OpenAPI parameter."""
+        if hasattr(param, 'schema') and hasattr(param.schema, 'type'):
+            return param.schema.type
+        elif hasattr(param, 'type'):
+            return param.type
+        else:
+            return "string"
+    
+    def _convert_openapi_schema_to_json_schema(self, schema) -> Dict[str, Any]:
+        """Convert OpenAPI schema to JSON schema format."""
+        if not schema:
+            return {"type": "object"}
+        
+        json_schema = {}
+        
+        if hasattr(schema, 'type'):
+            json_schema["type"] = schema.type
+        
+        if hasattr(schema, 'description'):
+            json_schema["description"] = schema.description
+        
+        if hasattr(schema, 'properties') and schema.properties:
+            json_schema["properties"] = {}
+            for prop_name, prop_schema in schema.properties.items():
+                json_schema["properties"][prop_name] = self._convert_openapi_schema_to_json_schema(prop_schema)
+        
+        if hasattr(schema, 'required') and schema.required:
+            json_schema["required"] = schema.required
+        
+        if hasattr(schema, 'items') and schema.items:
+            json_schema["items"] = self._convert_openapi_schema_to_json_schema(schema.items)
+        
+        if hasattr(schema, 'enum') and schema.enum:
+            json_schema["enum"] = schema.enum
+        
+        return json_schema
+    
+    # MCP Server interface methods
+    def get_tools(self) -> List[Dict[str, Any]]:
+        """Get list of available tools (without _meta)."""
+        return [{k: v for k, v in tool.items() if k != "_meta"} for tool in self.tools]
+    
+    async def call_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+        """Call a tool by name with arguments."""
+        if tool_name not in self.tool_handlers:
+            return {"error": f"Tool '{tool_name}' not found"}
+        
+        handler = self.tool_handlers[tool_name]
+        return await handler(arguments)
+    
+    def list_tool_names(self) -> List[str]:
+        """Get list of tool names."""
+        return list(self.tool_handlers.keys())
+
+# Example usage and utility functions
+async def create_mcp_server_from_openapi(
+    openapi_spec_path: str, 
+    base_url: str = None,
+    headers: Dict[str, str] = None
+) -> OpenAPIMCPServer:
+    """Create an MCP server from OpenAPI specification."""
+    return OpenAPIMCPServer(openapi_spec_path, base_url, headers)
+
+# Example usage
+if __name__ == "__main__":
+    async def main():
+        # Create MCP server from OpenAPI spec
+        server = await create_mcp_server_from_openapi(
+            "path/to/your/openapi.yaml",
+            base_url="https://api.example.com",
+            headers={"Authorization": "Bearer your-token"}
+        )
+        
+        # List available tools
+        tools = server.get_tools()
+        print(f"Available tools: {server.list_tool_names()}")
+        
+        # Call a tool
+        result = await server.call_tool("get_users", {
+            "limit": 10,
+            "offset": 0
+        })
+        print(f"Result: {result}")
+    
+    # Run the example
+    asyncio.run(main())
